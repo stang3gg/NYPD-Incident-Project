@@ -1,0 +1,191 @@
+---
+title: "Week 3 assignment"
+subtitle: "NYPD Shooting Incident Data - Historic"
+output:
+  html_document: default
+---
+# **Week 3 assignment**
+
+## **Intsall packages**
+You will need to install Tidyverse packages if you haven't had it installed.  
+Visit the follow site for additional info on Tidyverse <https://www.tidyverse.org/packages/>
+
+**Run the below to install Tidyverse**   
+install.packages("tidyverse") # for Tidyverse package
+
+**Install these packages for knit to html if they are not already installed**  
+install.packages("magrittr")  
+install.packages("dplyr")  
+install.packages("yaml") 
+
+**Loading libraries**  
+library(tidyverse)  
+library(readr)
+library(ggplot2)  
+library(lubridate)  
+library(magrittr)  
+library(dplyr)   
+
+#### **Data**  
+Pull in NYPD Shooting Incident Data Historic. Data source indicates data is from 2006 to 2021. Data source is from data.gov and pulls in NYC data from the City of New York website.  
+**URL:** <https://catalog.data.gov/dataset>    
+**URL:** <https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv>     
+**Data Source**  
+Read in csv data file from website  
+
+```{r}
+url_in <- read.csv("https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv", header = TRUE)
+View(url_in)
+```
+
+**Summary of data set**  
+
+```{r}
+summary(url_in) # use summary function to see summary of data set
+str(url_in) # use str function to see number of obs. and number of variable
+
+
+```
+**Changing variable and removing variables**  
+ 
+Changing OCCUR_DATE variable from CHAR to a Date object, removing unwanted variables and creating a new data set called NYPD.  
+
+The following variables were removed: X_COORD_CD, Y_COORD_CD, Latitude, Longitude and Lon_Lat 
+
+```{r}
+library(lubridate) # used to make variables into date 
+library(magrittr) # library in magrittr
+library(dplyr) # library in dplyr 
+NYPD <- url_in %>% 
+  mutate(OCCUR_DATE = mdy(OCCUR_DATE)) %>% 
+  select(-c(X_COORD_CD, Y_COORD_CD, Latitude, Longitude, Lon_Lat ))
+```
+**Removing obs. with missing data and na values**  
+ 
+
+```{r}
+library(dplyr) # library in dplyr
+
+NYPD2 <- NYPD %>% 
+  na_if("") %>% 
+  na.omit()
+
+
+```
+
+
+**Getting a summary of the new data set NYPD2**  
+ 
+```{r}
+summary(NYPD2) # use summary function to see new summary of new data set after removing blanks, na and unwanted variables 
+str(NYPD2) # use str function to see how many obs. are left  
+
+```
+## Analyzing data ##  
+
+Note : New York City is comprised of 5 boroughs. They are  Bronx, Brooklyn, Manhattan, Queens and Staten Island. This is indicated on the New York State website.  
+ 
+**How many incidents occur by NYC borough?**
+```{r}
+NYPD2 %>% count(BORO)  
+```
+**What is the number of gun incidents in each borough by victim's sex and age group**  
+  
+```{r}
+NYPD2 %>% count(BORO, VIC_SEX, VIC_AGE_GROUP)  
+```
+**Bias**  
+Looking at the victim's sex can cause bias. Victim's sex will be removed from the analysis.
+
+
+**Data set is from 2006 to 2021. Creating a year-month and a Year variable from OCCUR_DATE to see the trend of the incidents over time.**   
+
+```{r}
+NYPD2$Year_Month <- format(as.Date(NYPD2$OCCUR_DATE), "%Y-%m")
+NYPD2$Year <- format(as.Date(NYPD2$OCCUR_DATE), "%Y")
+
+```
+
+**What is the number of shooting incidents in NYC each year from 2006 to 2021 by NYC borough? 15 Years**  
+
+```{r}
+NYPD2 %>% count(Year,BORO)
+
+```
+
+
+**Make a table with number of incidents by year** 
+
+```{r}
+Incidents <- (NYPD2 %>% count(Year,BORO))
+```
+
+**Make a table with 2017 - 2021 Incidents. 5 Years** 
+
+```{r}
+Incidents_five_Yrs <- Incidents [Incidents$Year >= '2017' , ]
+```
+**Modeling**  
+
+Summary of shooting incidents in NYC 2017-2021  
+
+```{r}
+summary(Incidents_five_Yrs)
+```
+
+**Rename variables in Incidents_five_Yrs Table and change Year from character variable to Year variable**
+
+```{r}
+Incidents_five_Yrs <- (rename(Incidents_five_Yrs, Number_of_incidents=n))
+Incidents_five_Yrs <- (rename(Incidents_five_Yrs, NYC_boroughs=BORO))
+
+```
+
+
+**How many shooting incidents are there in NYC for each Borough in each year between 2017 - 2021?**  
+```{r}
+Incidents_five_Yrs %>% count(Year,NYC_boroughs, Number_of_incidents)  
+```
+
+  
+
+
+**Visualization**
+
+Number of shooting incidents in NYC from 2006 - 2021  
+
+```{r}
+#  Bar Plot  
+
+barplot( height = Incidents$n, names = Incidents$Year, col = rgb(0.2,0.4,0.6,0.6) )
+
+
+```
+
+Number of NYC shooting incidents from 2017 - 2021 in each NYC Borough  
+
+```{r}
+library(ggplot2)
+
+ggplot(aes(x=Year,y=Number_of_incidents,group=NYC_boroughs,fill=NYC_boroughs),data=Incidents_five_Yrs)+  
+ geom_bar(stat='identity', position = 'dodge')+ 
+  scale_y_continuous(limits =c(0,140),expand=c(0,0))+ 
+  labs(title ="NYC shooting incidents 2017 - 2021", x="NYC Boroughs", y= "Number of incidents")+  
+  theme(plot.title = element_text(hjust =0.5))+  
+   geom_text(aes(label = round(Number_of_incidents, 1)), 
+            position = position_dodge(0.9),
+            color="black",vjust = 0,hjust = 0.5)+  
+  theme_classic()  
+
+```
+```{r}
+# Plot the bar chart.
+# Map supp to colour
+
+ggplot(Incidents, aes(x = Year, y = n, colour = BORO, group = BORO)) +
+  geom_line()
+```
+
+
+
+
