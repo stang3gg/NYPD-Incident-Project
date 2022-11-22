@@ -1,7 +1,8 @@
 # NYPD Incident Project
  NYPD Shooting Incident Data Historic
 
-Data is obtained from the below URLs. 
+Data is obtained from the below URLs.   
+
 **URL:** <https://catalog.data.gov/dataset>    
 **URL:** <https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv>   
 
